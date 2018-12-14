@@ -19,6 +19,7 @@ Button btn_blue;
         btn_green=findViewById(R.id.btn_green);
         btn_blue=findViewById(R.id.btn_blue);
         final ColorPicker colorpicker=findViewById(R.id.colorpicker);
+        colorpicker.setGenMethod(ColorPicker.NATIVE_CODE);
         colorpicker.setColorChangedListener(new ColorPicker.OnColorSelectedListener() {
             @Override
             public void colorSelected(Integer color) {
@@ -34,14 +35,14 @@ Button btn_blue;
             @Override
             public void onClick(View v) {
                 colorpicker.setColor(Color.RED);
-                view.setBackgroundColor(Color.RED);
+                view.setBackgroundColor(colorpicker.getColor());
             }
         });
         btn_green.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 colorpicker.setColor(Color.GREEN);
-                view.setBackgroundColor(Color.GREEN);
+                view.setBackgroundColor(colorpicker.getColor());
             }
         });
 
@@ -49,7 +50,7 @@ Button btn_blue;
             @Override
             public void onClick(View v) {
                 colorpicker.setColor(Color.BLUE);
-                view.setBackgroundColor(Color.BLUE);
+                view.setBackgroundColor(colorpicker.getColor());
             }
         });
     }
