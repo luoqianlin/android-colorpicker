@@ -7,7 +7,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PaintFlagsDrawFilter;
+import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
@@ -160,7 +163,8 @@ public class ColorPicker extends View {
     //java code 10次 1061.4ms
     //renderscript 10 22.4ms
     private static Bitmap createColorPNG(Rect contentRect,Context context,int genMethod) {
-        Bitmap rgbBitmap = Bitmap.createBitmap(contentRect.width(), contentRect.height(), Bitmap.Config.ARGB_8888);
+
+        Bitmap rgbBitmap = Bitmap.createBitmap(contentRect.width()/2, contentRect.height()/2, Bitmap.Config.ARGB_8888);
         Log.d(TAG,String.format("%dx%d",rgbBitmap.getWidth(),rgbBitmap.getHeight()));
         long start=SystemClock.elapsedRealtime();
 //        for(int i=0;i<10;i++) {
@@ -174,6 +178,23 @@ public class ColorPicker extends View {
                 Log.d(TAG,"--rsfillBitmapPixel--");
                 rsfillBitmapPixel(rgbBitmap, context);
             }
+        Rect rect = new Rect(0, 0, contentRect.width() / 2, contentRect.height() / 2);
+        Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
+        int radius = Math.min(rect.width(), rect.height()) / 2;
+        Canvas canvas = new Canvas(bitmap);
+        canvas.setDrawFilter(new PaintFlagsDrawFilter(0,Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
+        Path path = new Path();
+        Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+
+//        paint.setColor(Color.RED);
+//        paint.setStyle(Paint.Style.STROKE);
+        path.addCircle(rect.centerX(), rect.centerY(), radius-2, Path.Direction.CW);
+//        canvas.clipPath(path, Region.Op.INTERSECT);
+        canvas.drawPath(path,paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(rgbBitmap, null, rect, paint);
+//        canvas.drawPath(path,paint);
+        rgbBitmap = bitmap;
 //        }
 //        rgbBitmap =Bitmap.createScaledBitmap(rgbBitmap,contentRect.width(),contentRect.height(),true);
         long end = SystemClock.elapsedRealtime();

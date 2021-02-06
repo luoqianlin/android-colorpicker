@@ -14,12 +14,13 @@ Button btn_blue;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        System.out.printf("color:%08x\n",Color.HSVToColor(new float[]{360,0,0}));
         final View view=findViewById(R.id.view);
         btn_red=findViewById(R.id.btn_red);
         btn_green=findViewById(R.id.btn_green);
         btn_blue=findViewById(R.id.btn_blue);
         final ColorPicker colorpicker=findViewById(R.id.colorpicker);
-        colorpicker.setGenMethod(ColorPicker.NATIVE_CODE);
+        colorpicker.setGenMethod(ColorPicker.JAVA_CODE);
         colorpicker.setColorChangedListener(new ColorPicker.OnColorSelectedListener() {
             @Override
             public void colorSelected(Integer color) {
