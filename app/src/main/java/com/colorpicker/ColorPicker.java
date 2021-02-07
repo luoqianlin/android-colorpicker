@@ -13,9 +13,8 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.os.SystemClock;
-import android.support.annotation.Nullable;
-import android.support.v8.renderscript.Allocation;
-import android.support.v8.renderscript.RenderScript;
+import android.renderscript.Allocation;
+import android.renderscript.RenderScript;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -37,48 +36,50 @@ import java.util.Arrays;
  * 类说明
  */
 public class ColorPicker extends View {
-    private static final String TAG="ColorPikerView";
+    private static final String TAG = "ColorPikerView";
     private static final String COLOR_PICKER_PNG = "colorPikerImage%dx%d.png";
     private float circleRadius;
-    private Rect contentRect;           
+    private Rect contentRect;
     private Bitmap rgbBitmap;
     private Point selectedPoint = new Point();
     private boolean mIsDragging = false;
     private int latest_x = 0;
     private int latest_y = 0;
     private OnColorSelectedListener listener;
-    float[] colorHsv = { 0f, 0f, 1f };
+    float[] colorHsv = {0f, 0f, 1f};
     private Bitmap pickerBitmap;
     private Paint textPaint;
-    private  Context context;
+    private Context context;
 
     public final static int JAVA_CODE = 0;
     public final static int NATIVE_CODE = 1;
     public final static int RS_CODE = 2;
     private int genMethod = JAVA_CODE;
+    final static boolean TEST_MODE = false;
 
     static {
         System.loadLibrary("colorpicker-lib");
     }
 
-    private PaintFlagsDrawFilter filter = new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);;
+    private PaintFlagsDrawFilter filter = new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    ;
 
     public ColorPicker(Context context) {
-        this(context,null);
+        this(context, null);
     }
 
-    public ColorPicker(Context context,  @Nullable AttributeSet attrs) {
-        this(context, attrs,0);
+    public ColorPicker(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
     }
 
-    public ColorPicker(Context context,  @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ColorPicker(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        this.context=context;
+        this.context = context;
         float density = context.getResources().getDisplayMetrics().density;
-        Log.i(TAG,"density:"+density);
+        Log.i(TAG, "density:" + density);
         pickerBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.color_picker1);
-        textPaint=new Paint();
-        textPaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,14,context.getResources().getDisplayMetrics()));
+        textPaint = new Paint();
+        textPaint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 14, context.getResources().getDisplayMetrics()));
         textPaint.setColor(Color.RED);
         textPaint.setAntiAlias(true);
     }
@@ -87,8 +88,8 @@ public class ColorPicker extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        int left = getPaddingLeft() ;
-        int top = getPaddingTop() ;
+        int left = getPaddingLeft();
+        int top = getPaddingTop();
         int right = getPaddingRight();
         int bottom = getPaddingBottom();
         int contentWidth = getWidth() - left - right;
@@ -99,7 +100,7 @@ public class ColorPicker extends View {
             startX = left;
             startY = top + (contentHeight - contentWidth) / 2;
         } else {
-            el =  contentHeight;
+            el = contentHeight;
             startX = left + (contentWidth - contentHeight) / 2;
             startY = top;
         }
@@ -116,20 +117,20 @@ public class ColorPicker extends View {
 
         canvas.setDrawFilter(filter);
 
-        if(rgbBitmap!=null) {
-            Log.d(TAG,"hsv:"+ Arrays.toString(this.colorHsv));
+        if (rgbBitmap != null) {
+            Log.d(TAG, "hsv:" + Arrays.toString(this.colorHsv));
             canvas.drawBitmap(rgbBitmap, null, contentRect, textPaint);
             getPointForColor();
             canvas.drawBitmap(pickerBitmap, selectedPoint.x - pickerBitmap.getWidth() / 2, selectedPoint.y - pickerBitmap.getHeight() / 2, null);
-        }else{
+        } else {
             String text = context.getString(R.string.colors_initialisation_load);
             float textWidth = textPaint.measureText(text, 0, text.length());
-            canvas.drawText(text,(contentRect.left+contentRect.right-textWidth)/2,(contentRect.top+contentRect.bottom)/2,textPaint);
+            canvas.drawText(text, (contentRect.left + contentRect.right - textWidth) / 2, (contentRect.top + contentRect.bottom) / 2, textPaint);
         }
     }
 
     private void getPointForColor() {
-        float hue = colorHsv[0] / 180f * (float)Math.PI;
+        float hue = colorHsv[0] / 180f * (float) Math.PI;
         selectedPoint.x = contentRect.left + (int) (Math.cos(hue) * colorHsv[1] * circleRadius + circleRadius);
         selectedPoint.y = contentRect.top + (int) (Math.sin(hue) * colorHsv[1] * circleRadius + circleRadius);
     }
@@ -159,46 +160,59 @@ public class ColorPicker extends View {
     }
 
     //native Color hsv2rgb 10次 1930.4ms
-    //native hsv2rgb 10次 139.3ms
-    //java code 10次 1061.4ms
-    //renderscript 10 22.4ms
-    private static Bitmap createColorPNG(Rect contentRect,Context context,int genMethod) {
+    //native hsv2rgb 10次 139.3ms /android10 142.7ms
+    //java code 10次 1061.4ms/android10 914.7ms
+    //renderscript 10 22.4ms/android10 19.1ms //首次使用74.0ms
+    //java code no jni android10 122.8ms
+    private static Bitmap createColorPNG(Rect contentRect, Context context, int genMethod) {
 
-        Bitmap rgbBitmap = Bitmap.createBitmap(contentRect.width()/2, contentRect.height()/2, Bitmap.Config.ARGB_8888);
-        Log.d(TAG,String.format("%dx%d",rgbBitmap.getWidth(),rgbBitmap.getHeight()));
-        long start=SystemClock.elapsedRealtime();
-//        for(int i=0;i<10;i++) {
+        Bitmap rgbBitmap;
+        if (TEST_MODE) {
+            rgbBitmap = Bitmap.createBitmap(contentRect.width(), contentRect.height(), Bitmap.Config.ARGB_8888);
+        } else {
+            rgbBitmap = Bitmap.createBitmap(contentRect.width() / 2, contentRect.height() / 2, Bitmap.Config.ARGB_8888);
+        }
+        Log.d(TAG, String.format("%dx%d", rgbBitmap.getWidth(), rgbBitmap.getHeight()));
+        long start = SystemClock.elapsedRealtime();
+        int loopCount = 1;
+        if (TEST_MODE) {
+            loopCount = 10;
+        }
+        for (int i = 0; i < loopCount; i++) {
             if (genMethod == JAVA_CODE) {
-                Log.d(TAG,"--fillBitmapPixel--");
+                Log.d(TAG, "--fillBitmapPixel--");
                 fillBitmapPixel(rgbBitmap);
             } else if (genMethod == NATIVE_CODE) {
-                Log.d(TAG,"--nativeFillBitmapPixel--");
+                Log.d(TAG, "--nativeFillBitmapPixel--");
                 nativeFillBitmapPixel(rgbBitmap);
             } else if (genMethod == RS_CODE) {
-                Log.d(TAG,"--rsfillBitmapPixel--");
+                Log.d(TAG, "--rsfillBitmapPixel--");
                 rsfillBitmapPixel(rgbBitmap, context);
             }
-        Rect rect = new Rect(0, 0, contentRect.width() / 2, contentRect.height() / 2);
-        Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
-        int radius = Math.min(rect.width(), rect.height()) / 2;
-        Canvas canvas = new Canvas(bitmap);
-        canvas.setDrawFilter(new PaintFlagsDrawFilter(0,Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG));
-        Path path = new Path();
-        Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+            if (!TEST_MODE) {
+                Rect rect = new Rect(0, 0, contentRect.width() / 2, contentRect.height() / 2);
+                Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
+                int radius = Math.min(rect.width(), rect.height()) / 2;
+                Canvas canvas = new Canvas(bitmap);
+                canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
+                Path path = new Path();
+                Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 //        paint.setColor(Color.RED);
 //        paint.setStyle(Paint.Style.STROKE);
-        path.addCircle(rect.centerX(), rect.centerY(), radius-2, Path.Direction.CW);
+                path.addCircle(rect.centerX(), rect.centerY(), radius - 2, Path.Direction.CW);
 //        canvas.clipPath(path, Region.Op.INTERSECT);
-        canvas.drawPath(path,paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(rgbBitmap, null, rect, paint);
+                canvas.drawPath(path, paint);
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+                canvas.drawBitmap(rgbBitmap, null, rect, paint);
 //        canvas.drawPath(path,paint);
-        rgbBitmap = bitmap;
-//        }
+                rgbBitmap = bitmap;
+                break;
+            }
+        }
 //        rgbBitmap =Bitmap.createScaledBitmap(rgbBitmap,contentRect.width(),contentRect.height(),true);
         long end = SystemClock.elapsedRealtime();
-        Log.d(TAG, "fill bitmap pixel cost:" + (end - start)/*/10.0*/ + "ms");
+        Log.d(TAG, "fill bitmap pixel cost:" + (end - start) * 1.0f / loopCount + "ms");
         return rgbBitmap;
     }
 
@@ -244,6 +258,8 @@ public class ColorPicker extends View {
 
 
     private static void fillBitmapPixel(Bitmap rgbBitmap) {
+
+
         int width = rgbBitmap.getWidth();
         int height = rgbBitmap.getHeight();
         int[] pixels = new int[width * height];
@@ -254,10 +270,10 @@ public class ColorPicker extends View {
         int x = circleRadius, y = circleRadius;
 
         for (int i = pixels.length - 1; i >= 0; i--) {
-            if ((i+1) % w == 0) {
+            if ((i + 1) % w == 0) {
                 x = circleRadius;
                 y--;
-            }else{
+            } else {
                 x--;
             }
             double centerDist = Math.sqrt(x * x + y * y);
@@ -268,22 +284,51 @@ public class ColorPicker extends View {
                 }
                 hsv[0] = v;
                 hsv[1] = (float) (centerDist / circleRadius);
-                pixels[i] = Color.HSVToColor(hsv);
-            }else{
+                pixels[i] = ColorUtils.hsvToRgb(0xFF, hsv);
+            } else {
                 pixels[i] = 0x00000000;
             }
         }
         rgbBitmap.setPixels(pixels, 0, w, 0, 0, w, h);
     }
 
-    private static native  void nativeFillBitmapPixel(Bitmap bitmap);
+    private static void fillBitmapPixel2(Bitmap rgbBitmap) {
+        int width = rgbBitmap.getWidth();
+        int height = rgbBitmap.getHeight();
+        int circleRadius = Math.min(width, height) / 2;
+        Canvas canvas = new Canvas(rgbBitmap);
+        canvas.translate(width / 2.0f, height / 2.0f);
+        float[] hsv = new float[]{0f, 0f, 1f};
+        Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStrokeWidth(1);
+        canvas.drawColor(Color.TRANSPARENT);
+        for (int x = -circleRadius; x <= circleRadius; x++) {
+            for (int y = -circleRadius; y <= circleRadius; y++) {
+                double centerDist = Math.sqrt(x * x + y * y);
+                if (centerDist <= circleRadius) {
+                    float v = (float) (Math.atan2(y, x) / Math.PI * 180f);
+                    if (v < 0) {
+                        v += 360;
+                    }
+                    hsv[0] = v;
+                    hsv[1] = (float) (centerDist / circleRadius);
+                    int color = ColorUtils.hsvToRgb(0xFF, hsv);
+                    paint.setColor(color);
+                    canvas.drawPoint(x, y, paint);
+                }
+            }
+        }
+        canvas.setBitmap(null);
+    }
 
-    public void setColor( int color ) {
+    private static native void nativeFillBitmapPixel(Bitmap bitmap);
+
+    public void setColor(int color) {
         Color.colorToHSV(color, colorHsv);
         invalidate();
     }
 
-    public int getColor(){
+    public int getColor() {
         return Color.HSVToColor(colorHsv);
     }
 
@@ -302,6 +347,7 @@ public class ColorPicker extends View {
         hsv[2] = 1f;
         return Color.HSVToColor(hsv);
     }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (!isEnabled()) {
@@ -309,7 +355,7 @@ public class ColorPicker extends View {
         }
 
         int action = event.getActionMasked();
-        switch ( action ) {
+        switch (action) {
             case MotionEvent.ACTION_DOWN:
                 startDragging(event);
                 break;
@@ -340,20 +386,20 @@ public class ColorPicker extends View {
     private void stopDragging() {
         mIsDragging = false;
         int colorForPoint = getColorForPoint(latest_x, latest_y, colorHsv);
-        if ( listener != null ) {
+        if (listener != null) {
             listener.onDragStop(colorForPoint);
         }
     }
 
     private void updateDragging(MotionEvent ev) {
-        int x = (int)ev.getX();
-        int y = (int)ev.getY();
-        Log.i(TAG,String.format("x=%d,y=%d",x,y));
+        int x = (int) ev.getX();
+        int y = (int) ev.getY();
+        Log.i(TAG, String.format("x=%d,y=%d", x, y));
         if (latest_x != x || latest_y != y) {
             latest_x = x;
             latest_y = y;
             int colorForPoint = getColorForPoint(latest_x, latest_y, colorHsv);
-            if ( listener != null ) {
+            if (listener != null) {
                 listener.colorSelected(colorForPoint);
             }
         }

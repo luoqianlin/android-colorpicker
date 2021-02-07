@@ -5,17 +5,17 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v8.renderscript.Allocation;
-import android.support.v8.renderscript.Element;
-import android.support.v8.renderscript.RenderScript;
-import android.support.v8.renderscript.ScriptIntrinsicBlur;
-import android.support.v8.renderscript.Type;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
+import android.renderscript.Type;
 import android.widget.ImageView;
 
 import com.colorpicker.renderscript.ScriptC_colorPicker;
 import com.example.q.renderscriptexample.ScriptC_histEq;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * @author lql
@@ -25,7 +25,7 @@ import com.example.q.renderscriptexample.ScriptC_histEq;
 public class RenderActivity extends AppCompatActivity {
     ImageView iv;
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate( Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_render);
         iv=findViewById(R.id.iv);

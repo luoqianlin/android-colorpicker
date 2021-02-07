@@ -54,7 +54,7 @@ static void HSVtoRGB(float *r, float *g, float *b, float h, float s, float v)
             break;
     }
 }
-#define  USE_JAVA_COLORHSV_TO_RGB 0
+#define  USE_JAVA_COLORHSV_TO_RGB 1
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_colorpicker_ColorPicker_nativeFillBitmapPixel(JNIEnv *env, jclass type, jobject bitmap) {
